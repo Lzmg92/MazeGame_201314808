@@ -1,0 +1,143 @@
+import java_cup.runtime.*;
+
+parser code
+{:
+    /**Metodo al que se llama automáticamente ante algún error sintactico.*/
+    public void syntax_error(Symbol s){
+        System.out.println("Error en la Línea " + (s.right+1) +" Columna "+s.left+ ". Identificador "
+        +s.value + " no reconocido." );
+    }
+
+    /**Metodo al que se llama en el momento en que ya no es posible una recuperación de
+    errores.*/
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception{
+        System.out.println("Error sin rec en la Línea " + (s.right+1)+ " Columna "+s.left+ ". Identificador " +
+        s.value + " no reconocido.");
+    }
+:}
+
+action code
+{:
+Datos d = new Datos();
+int ne = 0;
+int nm = 0;
+String nombretemp = "";
+String tipotemp = "";
+int xtemp = 0;
+int ytemp = 0;
+int ctetemp = 0;
+:}
+
+terminal  aescenarios, apersonajes, aheroes, avillanos, aparedes, aextras, aarmas, abonus, abombas, ameta,
+          cescenarios, cpersonajes, cheroes, cvillanos, cparedes, cextras, carmas, cbonus, cbombas, cmeta,
+          dimension, dpts, parenta, parentc, coma, pycoma, igual, etiqa, etiqc;
+
+terminal String oracion, numero, nombrefo;
+
+non terminal INICIAL, EST, PER, PAR, EXT, MET, INILISTC, NOLIST, M1, M2, M3,
+             LISTACOOR, LISTACOORPA,
+             PERSONAJES, EXTRAS;
+
+start with INICIAL;
+
+INICIAL ::= etiqa
+            aescenarios igual nombrefo:nfo {: d.NombreFon = nfo;:} pycoma
+            dimension igual numero:nu {: d.Dimension = Integer.parseInt(nu); :} etiqc
+            EST
+            etiqa cescenarios etiqc;
+
+EST ::= PER PAR EXT MET;
+
+NOLIST ::= oracion:nom {: nombretemp = nom; :} parenta
+           numero:x {: xtemp = Integer.parseInt(x); :} coma
+           numero:y {: ytemp = Integer.parseInt(y); :} parentc
+           pycoma {:  d.ListaExtrasCoor.add(new NodoCoor("","",0,0));
+
+                                    d.ListaExtrasCoor.get(ne).setNombre(nombretemp);
+                                    d.ListaExtrasCoor.get(ne).setTipo(tipotemp);
+                                    d.ListaExtrasCoor.get(ne).setX(xtemp);
+                                    d.ListaExtrasCoor.get(ne).setY(ytemp);
+                                    ne++; :} ;
+
+LISTACOOR ::= NOLIST LISTACOOR
+            | NOLIST  ;
+
+
+PER ::= etiqa apersonajes etiqc
+        PERSONAJES
+        etiqa cpersonajes etiqc;
+
+PERSONAJES::= etiqa aheroes etiqc {: tipotemp = "heroe"; :}
+              LISTACOOR {: d.NombreHer = nombretemp; d.XHer = xtemp; d.YHer = ytemp;  :}
+              etiqa cheroes etiqc
+              etiqa avillanos etiqc {: tipotemp = "villano"; :}
+              LISTACOOR
+              etiqa cvillanos etiqc ;
+
+INILISTC ::= oracion:nom {: nombretemp = nom; :} parenta numero:x {: xtemp = Integer.parseInt(x); :} ;
+
+M1::= INILISTC coma numero: y {: ytemp = Integer.parseInt(y); :}
+                      parentc {: d.ListaMuro.add(new NodoMuroCoor("", false, 0, 0, 0));
+
+                              d.ListaMuro.get(nm).setNombre(nombretemp);
+                              d.ListaMuro.get(nm).setHorizontal(true);
+                              d.ListaMuro.get(nm).setIni(xtemp);
+                              d.ListaMuro.get(nm).setFin(xtemp);
+                              d.ListaMuro.get(nm).setCte(ytemp);
+                              nm++; :}
+
+                      pycoma;
+
+M2 ::= INILISTC dpts numero:y {: ytemp = Integer.parseInt(y); :} coma numero:z {: ctetemp = Integer.parseInt(z); :}
+                       parentc {: d.ListaMuro.add(new NodoMuroCoor("", false, 0, 0, 0));
+
+                                  d.ListaMuro.get(nm).setNombre(nombretemp);
+                                  d.ListaMuro.get(nm).setHorizontal(true);
+                                  d.ListaMuro.get(nm).setIni(xtemp);
+                                  d.ListaMuro.get(nm).setFin(ytemp);
+                                  d.ListaMuro.get(nm).setCte(ctetemp);
+                                  nm++; :}
+                       pycoma;
+
+M3 ::= INILISTC coma numero:y {: ytemp = Integer.parseInt(y); :} dpts numero:z {: ctetemp = Integer.parseInt(z); :}
+                       parentc {: d.ListaMuro.add(new NodoMuroCoor("", false, 0, 0, 0));
+
+                                  d.ListaMuro.get(nm).setNombre(nombretemp);
+                                  d.ListaMuro.get(nm).setHorizontal(false);
+                                  d.ListaMuro.get(nm).setIni(ytemp);
+                                  d.ListaMuro.get(nm).setFin(ctetemp);
+                                  d.ListaMuro.get(nm).setCte(xtemp);
+                                  nm++; :}
+
+                       pycoma;
+
+LISTACOORPA ::=  M1 LISTACOORPA
+              |  M2 LISTACOORPA
+              |  M3 LISTACOORPA
+              |  M1
+              |  M2
+              |  M3 ;
+
+PAR ::= etiqa aparedes etiqc
+        LISTACOORPA
+        etiqa cparedes etiqc;
+
+EXT ::= etiqa aextras etiqc
+        EXTRAS
+        etiqa cextras etiqc;
+
+EXTRAS ::= etiqa aarmas etiqc {: tipotemp = "arma"; :}
+           LISTACOOR
+           etiqa carmas etiqc
+
+           etiqa abombas etiqc {: tipotemp = "bomba"; :}
+           LISTACOOR
+           etiqa cbombas etiqc
+
+           etiqa abonus {: tipotemp = "bonus"; :} etiqc
+           LISTACOOR
+           etiqa cbonus etiqc;
+
+MET ::= etiqa ameta etiqc {: tipotemp = "meta"; :}
+        LISTACOOR
+        etiqa cmeta etiqc;

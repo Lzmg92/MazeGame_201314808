@@ -1,0 +1,144 @@
+import java_cup.runtime.*;
+
+parser code
+{:
+    /**Metodo al que se llama automáticamente ante algún error sintactico.*/
+    public void syntax_error(Symbol s){
+        System.out.println("Error en la Línea " + (s.right+1) +" Columna "+s.left+ ". Identificador "
+        +s.value + " no reconocido." );
+        d.errores = d.errores +"\n"+"Error en la Línea: " + (s.right+1) +" Columna: "+s.left+ ". Identificador: "
+                                            +s.value ;
+    }
+
+    /**Metodo al que se llama en el momento en que ya no es posible una recuperación de
+    errores.*/
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception{
+        System.out.println("Error sin rec en la Línea " + (s.right+1)+ " Columna "+s.left+ ". Identificador " +
+        s.value + " no reconocido.");
+         d.errores = d.errores +"\n"+"Error sin recuperacion en la Línea: " + (s.right+1) +" Columna: "+s.left+ ". Identificador: "
+                                                    +s.value ;
+    }
+:}
+
+action code
+{:
+Datos d = new Datos();
+int nf = 0;
+int np = 0;
+int ne = 0;
+String rutatemp = "/";
+String nombretemp = "";
+String descrtemp = "";
+String tipotemp = "";
+int vidatemp = 0;
+:}
+
+terminal  aconfig, abackground, afigure, adesign,
+          cconfig, cbackground, cfigure, cdesign,
+          nombre, imagen, vida, tipo, theroe, tvillano, descripcion,
+          destruir, creditos, tmeta, tbomba, tbloque, tbonus, tarma,
+          llavea, llavec, coma, pycoma, igual, adireccion, astring;
+
+terminal String oracion, nombrefo, numero, sstring;
+
+non terminal INICIAL, CONF, C, EST, NOMBRE, IMAGEN, TIPO, VIDA, DESCRIP,
+             TIPF, TIPD1, TIPD2, BOAR, MEBL, BONUS, INIDDES,
+             BCKG, CBCKG, DBCKG,
+             FIG, CFIG, DFIG,
+             DES, CDES, DDES ;
+
+start with INICIAL;
+
+INICIAL ::= CONF;
+
+CONF ::= C CONF
+      |C ;
+
+C ::= aconfig EST cconfig ;
+
+EST ::= BCKG FIG DES
+      | BCKG DES FIG
+      | FIG BCKG DES
+      | FIG DES BCKG
+      | DES BCKG FIG
+      | DES FIG BCKG;
+
+IMAGEN ::=  imagen igual astring adireccion sstring:st {: char[] ar = st.toCharArray();
+                                                          for(int i=0; i<ar.length-1;i++){rutatemp = rutatemp + ar[i];}
+                                                           :} pycoma;
+
+BCKG ::= abackground  {: System.out.println("abrebck"); :}
+         CBCKG cbackground;
+
+DBCKG ::= llavea {:  d.ListaFondos.add(new NodoFondo("","")); :}
+          nombre igual nombrefo:nomf {:  d.ListaFondos.get(nf).setNombre(nomf); :} pycoma
+          IMAGEN {:  d.ListaFondos.get(nf).setRuta(rutatemp); rutatemp = "/"; :}
+          llavec {: nf++; :}
+
+        | llavea {:  d.ListaFondos.add(new NodoFondo("","")); :}
+          IMAGEN {:  d.ListaFondos.get(nf).setRuta(rutatemp); rutatemp = "/"; :}
+          nombre igual nombrefo:nomf {:  d.ListaFondos.get(nf).setNombre(nomf); :} pycoma
+          llavec {: nf++; :};
+
+CBCKG ::=  DBCKG coma CBCKG
+         | DBCKG;
+
+
+NOMBRE ::= nombre igual oracion:nom {: nombretemp = nom; :} pycoma;
+VIDA ::= vida igual numero:num {: vidatemp =  Integer.parseInt(num); :} pycoma;
+DESCRIP ::=  descripcion igual astring sstring:st {: char[] ar = st.toCharArray();
+                                                     for(int i=0; i<ar.length-1;i++){descrtemp = descrtemp + ar[i];} :} pycoma;
+
+TIPO ::= tipo igual;
+
+TIPF ::= theroe {: tipotemp = "heroe"; :} pycoma
+       | tvillano {: tipotemp = "villano"; :}  pycoma;
+
+
+FIG ::= afigure  {: System.out.println("abrefig"); :}
+         CFIG cfigure;
+
+DFIG ::= llavea     {: d.ListaPersonajes.add(new NodoPersonaje("","",0,"",""));  :}
+         NOMBRE     {: d.ListaPersonajes.get(np).setNombre(nombretemp); :}
+         IMAGEN     {: d.ListaPersonajes.get(np).setRuta(rutatemp); rutatemp = "/"; :}
+         VIDA       {: d.ListaPersonajes.get(np).setVida(vidatemp); :}
+         DESCRIP    {: d.ListaPersonajes.get(np).setDescripcion(descrtemp); descrtemp = ""; :}
+         TIPO TIPF  {: d.ListaPersonajes.get(np).setTipo(tipotemp); :}
+         llavec     {: np++; :};
+
+
+CFIG ::=  DFIG coma CFIG
+        | DFIG;
+
+
+TIPD1 ::= tbomba  {: tipotemp = "bomba"; :}  pycoma
+       | tarma    {: tipotemp = "arma"; :} pycoma;
+
+TIPD2 ::= tmeta   {: tipotemp = "meta"; :} pycoma
+        | tbloque {: tipotemp = "bloque"; :} pycoma;
+
+DES ::= adesign {: System.out.println("abredes"); :}
+        CDES cdesign;
+
+INIDDES ::= llavea      {: d.ListaExtras.add(new NodoExtras("","","",0)); :}
+            NOMBRE      {: d.ListaExtras.get(ne).setNombre(nombretemp); :}
+            IMAGEN      {: d.ListaExtras.get(ne).setRuta(rutatemp); rutatemp = "/"; :}
+            TIPO;
+
+BOAR ::=  INIDDES TIPD1 {: d.ListaExtras.get(ne).setTipo(tipotemp); :}
+          destruir igual numero:nu {: d.ListaExtras.get(ne).setPuntos(Integer.parseInt(nu)); :} pycoma
+          llavec {: ne++; :} ;
+
+MEBL ::=  INIDDES TIPD2 {: d.ListaExtras.get(ne).setTipo(tipotemp); :}
+          llavec {: ne++; :} ;
+
+BONUS ::= INIDDES tbonus {: d.ListaExtras.get(ne).setTipo("bonus"); :} pycoma
+          creditos igual numero:nu {: d.ListaExtras.get(ne).setPuntos(Integer.parseInt(nu)); :} pycoma
+          llavec {: ne++; :} ;
+
+DDES ::= BOAR
+       | MEBL
+       | BONUS;
+
+CDES ::= DDES coma CDES
+       | DDES;
